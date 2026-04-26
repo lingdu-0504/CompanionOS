@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CompanionOS - VRM Companion</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+    #vrm-canvas { width: 100%; height: 100%; display: block; }
+    #loading {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      color: #ccd6f6; font-family: -apple-system, sans-serif; font-size: 14px;
+      text-align: center;
+    }
+    #loading .spinner {
+      width: 24px; height: 24px; border: 2px solid rgba(100,255,218,0.3);
+      border-top-color: #64ffda; border-radius: 50%; margin: 0 auto 8px;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading .progress-bar {
+      width: 160px; height: 3px; background: rgba(100,255,218,0.15);
+      border-radius: 2px; margin: 8px auto 0; overflow: hidden;
+    }
+    #loading .progress-bar .fill {
+      height: 100%; width: 0%; background: #64ffda;
+      border-radius: 2px; transition: width 0.3s ease;
+    }
+    #loading .progress-text {
+      font-size: 11px; color: rgba(204,214,246,0.6); margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="vrm-canvas"></canvas>
+  <div id="loading">
+    <div class="spinner"></div>
+    <div>Loading Companion...</div>
+    <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
+    <div class="progress-text" id="progress-text">0%</div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { VRMLoaderPlugin, VRMUtils } from 'three/addons/vrm/VRMLoaderPlugin.js';
+
+    const canvas = document.getElementById('vrm-canvas');
+    const loadingEl = document.getElementById('loading');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(30, canvas.clientWidth / canvas.clientHeight, 0.1, 20);
+    camera.position.set(0, 1.3, 1.5);
+    camera.lookAt(0, 1.0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+    // Lighting
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(1, 2, 1);
+    scene.add(dirLight);
+    const ambLight = new THREE.AmbientLight(0x8888ff, 0.5);
+    scene.add(ambLight);
+
+    // Default avatar (simple shape until VRM model loaded)
+    let vrm = null;
+    let currentExpression = 'neutral';
+    let currentAction = 'idle';
+    let blinkTimer = 0;
+    let breathTimer = 0;
+    let actionTimer = 0;
+    let actionPhase = 0;
+
+    // Simple placeholder avatar
+    function createPlaceholderAvatar() {
+      const group = new THREE.Group();
+
+      // Body
+      const bodyGeo = new THREE.CapsuleGeometry(0.15, 0.4, 8, 16);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6c5ce7, roughness: 0.6 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 0.55;
+      group.add(body);
+
+      // Head
+      const headGeo = new THREE.SphereGeometry(0.18, 16, 16);
+      const headMat = new THREE.MeshStandardMaterial({ color: 0xffeaa7, roughness: 0.5 });
+      const head = new THREE.Mesh(headGeo, headMat);
+      head.position.y = 1.05;
+      group.add(head);
+
+      // Eyes
+      const eyeGeo = new THREE.SphereGeometry(0.03, 8, 8);
+      const eyeMat = new THREE.MeshStandardMaterial({ color: 0x2d3436 });
+      const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+      leftEye.position.set(-0.06, 1.08, 0.15);
+      group.add(leftEye);
+      const rightEye = new THREE.Mesh(eyeGeo, eyeMat.clone());
+      rightEye.position.set(0.06, 1.08, 0.15);
+      group.add(rightEye);
+
+      // Mouth
+      const mouthGeo = new THREE.TorusGeometry(0.04, 0.01, 8, 16, Math.PI);
+      const mouthMat = new THREE.MeshStandardMaterial({ color: 0xe17055 });
+      const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+      mouth.position.set(0, 1.0, 0.16);
+      mouth.rotation.x = Math.PI;
+      group.add(mouth);
+
+      group.leftEye = leftEye;
+      group.rightEye = rightEye;
+      group.mouth = mouth;
+      group.body = body;
+      group.head = head;
+
+      return group;
+    }
+
+    const avatar = createPlaceholderAvatar();
+    scene.add(avatar);
+
+    // Try to load VRM model
+    const gltfLoader = new GLTFLoader();
+
+    // VRM model path - check for local model
+    const vrmModelUrl = '/vrm-model.vrm';
+
+    async function tryLoadVRM() {
+      try {
+        const gltf = await gltfLoader.loadAsync(vrmModelUrl, (progress) => {
+          try {
+            const pct = Math.round((progress.loaded / progress.total) * 100);
+            progressFill.style.width = pct + '%';
+            progressText.textContent = pct + '%';
+          } catch (e) {
+            // ignore progress tracking errors
+          }
+        });
+        if (gltf.userData.vrm) {
+          vrm = gltf.userData.vrm;
+          VRMUtils.removeUnnecessaryVertices(gltf.scene);
+          VRMUtils.removeUnnecessaryJoints(gltf.scene);
+          scene.remove(avatar);
+          scene.add(vrm.scene);
+          vrm.scene.rotation.y = Math.PI;
+          loadingEl.style.display = 'none';
+          console.log('[VRM] Model loaded successfully');
+        }
+      } catch (e) {
+        console.log('[VRM] No VRM model found, using placeholder avatar');
+        loadingEl.textContent = '';
+        loadingEl.innerHTML = '<div style="font-size:48px">😊</div>';
+        setTimeout(() => { loadingEl.style.display = 'none'; }, 1500);
+      }
+    }
+    tryLoadVRM();
+
+    // Expression maps
+    const expressionMap = {
+      neutral: { mouthScaleY: 1, eyeScaleY: 1, bodyTilt: 0 },
+      happy: { mouthScaleY: 1.3, eyeScaleY: 0.5, bodyTilt: 0 },
+      sad: { mouthScaleY: 0.7, eyeScaleY: 0.6, bodyTilt: -0.05 },
+      tired: { mouthScaleY: 0.8, eyeScaleY: 0.3, bodyTilt: -0.03 },
+      love: { mouthScaleY: 1.2, eyeScaleY: 0.6, bodyTilt: 0.03 },
+      curious: { mouthScaleY: 0.9, eyeScaleY: 1.2, bodyTilt: 0.02 },
+      comfort: { mouthScaleY: 1.1, eyeScaleY: 0.7, bodyTilt: 0 },
+      angry: { mouthScaleY: 0.6, eyeScaleY: 0.4, bodyTilt: -0.04 },
+      surprised: { mouthScaleY: 1.5, eyeScaleY: 1.4, bodyTilt: 0.02 },
+      fearful: { mouthScaleY: 0.5, eyeScaleY: 1.3, bodyTilt: -0.06 },
+    };
+
+    // Emotion lighting colors
+    const emotionLightColors = {
+      neutral: 0x8888ff,
+      happy: 0xffdd88,
+      sad: 0x6688cc,
+      tired: 0x9988aa,
+      love: 0xff88aa,
+      curious: 0x88ddff,
+      comfort: 0x88ffaa,
+      angry: 0xff4444,
+      surprised: 0xffff88,
+      fearful: 0xaa88cc,
+    };
+
+    // Particle system
+    let particleSystem = null;
+    function createParticleSystem() {
+      try {
+        const count = 200;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const sizes = new Float32Array(count);
+        const speeds = new Float32Array(count);
+        const phases = new Float32Array(count);
+
+        for (let i = 0; i < count; i++) {
+          positions[i * 3] = (Math.random() - 0.5) * 4;
+          positions[i * 3 + 1] = Math.random() * 3;
+          positions[i * 3 + 2] = (Math.random() - 0.5) * 4 - 0.5;
+          sizes[i] = 0.005 + Math.random() * 0.015;
+          speeds[i] = 0.2 + Math.random() * 0.4;
+          phases[i] = Math.random() * Math.PI * 2;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        const material = new THREE.PointsMaterial({
+          color: 0xccddf6,
+          size: 0.02,
+          transparent: true,
+          opacity: 0.6,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          sizeAttenuation: true,
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        particles.userData = { speeds, phases, initialPositions: positions.slice() };
+        scene.add(particles);
+        return particles;
+      } catch (e) {
+        console.warn('[VRM] Failed to create particle system:', e);
+        return null;
+      }
+    }
+    particleSystem = createParticleSystem();
+
+    // Ground glow
+    let groundGlow = null;
+    function createGroundGlow() {
+      try {
+        const geo = new THREE.RingGeometry(0.15, 0.45, 32);
+        const mat = new THREE.MeshBasicMaterial({
+          color: 0x6c5ce7,
+          transparent: true,
+          opacity: 0.25,
+          side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.y = 0.01;
+        scene.add(mesh);
+        return mesh;
+      } catch (e) {
+        console.warn('[VRM] Failed to create ground glow:', e);
+        return null;
+      }
+    }
+    groundGlow = createGroundGlow();
+
+    // Animation loop
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      try {
+        // Update emotion lighting
+        const lightColor = emotionLightColors[currentExpression] || emotionLightColors.neutral;
+        ambLight.color.setHex(lightColor);
+        const intensity = currentExpression === 'angry' ? 0.7 : 0.5;
+        ambLight.intensity = intensity;
+
+        // Update ground glow color
+        if (groundGlow) {
+          groundGlow.material.color.setHex(lightColor);
+          groundGlow.material.opacity = 0.2 + Math.sin(time * 0.5) * 0.08;
+        }
+
+        // Update particles
+        if (particleSystem) {
+          try {
+            const pos = particleSystem.geometry.attributes.position.array;
+            const { speeds, phases, initialPositions } = particleSystem.userData;
+            const count = pos.length / 3;
+            for (let i = 0; i < count; i++) {
+              const i3 = i * 3;
+              pos[i3 + 1] = initialPositions[i3 + 1] + Math.sin(time * speeds[i] + phases[i]) * 0.3;
+              pos[i3] = initialPositions[i3] + Math.sin(time * speeds[i] * 0.5 + phases[i]) * 0.15;
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+          } catch (e) {
+            // ignore particle update errors
+          }
+        }
+      } catch (e) {
+        // ignore lighting/particle errors
+      }
+
+      try {
+        if (vrm) {
+          // VRM expression handling
+          try {
+            const vrmExpressions = ['neutral', 'happy', 'sad', 'angry', 'surprised', 'fearful'];
+            for (const exp of vrmExpressions) {
+              const val = exp === currentExpression ? 1.0 : 0.0;
+              vrm.expressionManager?.setValue(exp, val);
+            }
+          } catch (e) {
+            // ignore expression errors
+          }
+
+          // VRM action system
+          try {
+            actionTimer += delta;
+            const root = vrm.scene;
+            switch (currentAction) {
+              case 'idle':
+                root.position.y = 0;
+                root.rotation.z = 0;
+                vrm.humanoid?.getNormalizedBoneNode('chest')?.rotateX(Math.sin(time * 2) * 0.01);
+                break;
+              case 'wave':
+                root.position.y = 0;
+                root.rotation.z = 0;
+                vrm.humanoid?.getNormalizedBoneNode('chest')?.rotateX(Math.sin(time * 2) * 0.01);
+                {
+                  const arm = vrm.humanoid?.getNormalizedBoneNode('leftUpperArm');
+                  if (arm) {
+                    arm.rotation.z = Math.sin(time * 3) * 0.3 - 0.5;
+                    arm.rotation.x = Math.sin(time * 3) * 0.2 - 0.3;
+                  }
+                }
+                break;
+              case 'hug':
+                root.position.y = 0;
+                root.rotation.z = 0;
+                {
+                  const lArm = vrm.humanoid?.getNormalizedBoneNode('leftUpperArm');
+                  const rArm = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm');
+                  if (lArm) { lArm.rotation.z = -0.8; lArm.rotation.x = -0.3; }
+                  if (rArm) { rArm.rotation.z = 0.8; rArm.rotation.x = -0.3; }
+                }
+                break;
+              case 'dance':
+                root.position.y = Math.sin(time * 4) * 0.03;
+                root.rotation.z = Math.sin(time * 2) * 0.05;
+                root.rotation.y = Math.sin(time * 1.5) * 0.1;
+                vrm.humanoid?.getNormalizedBoneNode('chest')?.rotateX(Math.sin(time * 4) * 0.03);
+                break;
+              case 'think':
+                root.position.y = 0;
+                root.rotation.z = 0;
+                root.rotation.y = Math.sin(time * 0.5) * 0.05;
+                {
+                  const arm = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm');
+                  if (arm) {
+                    arm.rotation.z = 0.3;
+                    arm.rotation.x = -0.8;
+                  }
+                }
+                break;
+            }
+          } catch (e) {
+            // ignore action errors
+          }
+
+          // Look at camera
+          vrm.lookAt?.solver?.updateFromCamera(camera);
+
+          vrm.update(delta);
+        } else {
+          // Placeholder avatar animation
+          const exp = expressionMap[currentExpression] || expressionMap.neutral;
+
+          // Breathing
+          avatar.body.scale.y = 1 + Math.sin(time * 2) * 0.02;
+          avatar.body.rotation.z = exp.bodyTilt + Math.sin(time * 1.5) * 0.01;
+
+          // Eye blinking
+          blinkTimer += delta;
+          if (blinkTimer > 3 + Math.random() * 2) {
+            avatar.leftEye.scale.y = 0.1;
+            avatar.rightEye.scale.y = 0.1;
+            setTimeout(() => {
+              avatar.leftEye.scale.y = exp.eyeScaleY;
+              avatar.rightEye.scale.y = exp.eyeScaleY;
+            }, 100);
+            blinkTimer = 0;
+          }
+
+          // Expression
+          avatar.leftEye.scale.y = exp.eyeScaleY;
+          avatar.rightEye.scale.y = exp.eyeScaleY;
+          avatar.mouth.scale.y = exp.mouthScaleY;
+
+          // Placeholder action system
+          try {
+            actionTimer += delta;
+            switch (currentAction) {
+              case 'idle':
+                avatar.position.y = 0;
+                avatar.rotation.z = 0;
+                avatar.rotation.y = 0;
+                break;
+              case 'wave':
+                avatar.position.y = 0;
+                avatar.rotation.z = 0;
+                avatar.rotation.y = 0;
+                avatar.head.rotation.z = Math.sin(time * 3) * 0.1;
+                avatar.body.rotation.z = Math.sin(time * 3) * 0.05;
+                break;
+              case 'hug':
+                avatar.position.y = 0;
+                avatar.rotation.z = 0;
+                avatar.rotation.y = 0;
+                avatar.body.scale.x = 0.85;
+                avatar.body.scale.z = 0.85;
+                break;
+              case 'dance':
+                avatar.position.y = Math.sin(time * 4) * 0.04;
+                avatar.rotation.z = Math.sin(time * 2) * 0.06;
+                avatar.rotation.y = Math.sin(time * 1.5) * 0.12;
+                break;
+              case 'think':
+                avatar.position.y = 0;
+                avatar.rotation.z = 0;
+                avatar.rotation.y = Math.sin(time * 0.5) * 0.06;
+                avatar.head.rotation.z = -0.08;
+                avatar.head.rotation.x = -0.05;
+                break;
+            }
+          } catch (e) {
+            // ignore action errors
+          }
+        }
+      } catch (e) {
+        // ignore main animation errors
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = canvas.clientWidth / canvas.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    });
+
+    // IPC listener for companion actions from main window
+    window.addEventListener('message', (event) => {
+      try {
+        const { type, data } = event.data || {};
+        if (type === 'companion-action') {
+          if (data?.emotion) currentExpression = data.emotion;
+          if (data?.action) currentAction = data.action;
+        }
+        if (type === 'set-expression') {
+          currentExpression = data?.expression || 'neutral';
+        }
+      } catch (e) {
+        // ignore message errors
+      }
+    });
+
+    // Also listen for Electron IPC if available
+    try {
+      if (window.require) {
+        const { ipcRenderer } = window.require('electron');
+        ipcRenderer.on('companion-action', (_, data) => {
+          try {
+            if (data?.emotion) currentExpression = data.emotion;
+            if (data?.action) currentAction = data.action;
+          } catch (e) {
+            // ignore ipc errors
+          }
+        });
+      }
+    } catch (e) {
+      // ignore electron require errors
+    }
+  </script>
+</body>
+</html>

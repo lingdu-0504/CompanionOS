@@ -1,0 +1,64 @@
+[project]
+name = "companion-os-backend"
+version = "0.2.0"
+description = "CompanionOS后端服务 - 统一FastAPI + MCP + A2A + 多Agent"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.136.0",
+    "httpx>=0.28.1",
+    "pydantic>=2.13.3",
+    "uvicorn>=0.45.0",
+    "websockets>=16.0",
+    "sse-starlette>=2.0",
+    "httpx-ws>=0.6",
+    "pillow>=12.2.0",
+    "pytesseract>=0.3.13",
+    "faster-whisper>=1.2.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.11",
+]
+
+[project.optional-dependencies]
+all = [
+    "fastapi>=0.136",
+    "uvicorn[standard]>=0.45",
+    "websockets>=16.0",
+    "pydantic>=2.13",
+    "httpx>=0.28",
+    "sse-starlette>=2.0",
+    "sqlalchemy>=2.0",
+    "aiosqlite>=0.21",
+    "letta-client>=0.5",
+    "openai>=1.60",
+    "edge-tts>=6.1",
+]
+
+# ==================== 工具配置 ====================
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+filterwarnings = [
+    # 抑制 websockets 16.x legacy API 弃用警告（uvicorn 内部依赖）
+    "ignore:websockets.legacy is deprecated:DeprecationWarning:websockets",
+    "ignore:websockets.server.WebSocketServerProtocol is deprecated:DeprecationWarning:uvicorn",
+    # 抑制 Pydantic v2 弃用警告（第三方库尚未迁移的）
+    "ignore:Pydantic V1 style:DeprecationWarning",
+    # 项目自身的弃用警告仍显示
+    "default::DeprecationWarning:companion_os",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = ["E501"]  # 行长度由 line-length 控制
+
+[tool.ruff.lint.isort]
+known-first-party = ["router", "agent_bridge", "workflow_engine", "companion", "memory", "voice", "security", "daemon"]

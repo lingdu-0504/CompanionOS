@@ -1,0 +1,143 @@
+.home-view {
+  padding: 24px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.home-greeting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(15, 52, 96, 0.5), rgba(83, 52, 131, 0.3));
+  border-radius: 16px;
+  padding: 24px 32px;
+  margin-bottom: 24px;
+}
+
+.greeting-text h2 {
+  color: #ccd6f6;
+  font-size: 22px;
+  margin: 0 0 4px 0;
+  font-weight: 600;
+}
+
+.greeting-sub {
+  color: #8892b0;
+  font-size: 14px;
+  margin: 0;
+}
+
+.greeting-mascot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.mascot-emoji {
+  font-size: 48px;
+}
+
+.mascot-level {
+  font-size: 11px;
+  color: #64ffda;
+  font-weight: 500;
+}
+
+.home-section {
+  margin-bottom: 24px;
+}
+
+.home-section h3 {
+  color: #ccd6f6;
+  font-size: 15px;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.workflow-card {
+  background: rgba(15, 52, 96, 0.3);
+  border: 1px solid rgba(100, 255, 218, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workflow-card:hover {
+  border-color: #64ffda;
+  background: rgba(15, 52, 96, 0.5);
+  transform: translateY(-2px);
+}
+
+.wf-icon {
+  font-size: 24px;
+  color: #64ffda;
+  margin-bottom: 4px;
+}
+
+.wf-name {
+  font-size: 14px;
+  color: #ccd6f6;
+  font-weight: 500;
+}
+
+.wf-desc {
+  font-size: 12px;
+  color: #8892b0;
+}
+
+.overview-cards {
+  display: flex;
+  gap: 12px;
+}
+
+.overview-card {
+  flex: 1;
+  background: rgba(15, 52, 96, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ov-number {
+  font-size: 28px;
+  color: #64ffda;
+  font-weight: 700;
+}
+
+.ov-label {
+  font-size: 12px;
+  color: #8892b0;
+}
+
+.loading {
+  text-align: center;
+  padding: 32px 16px;
+  color: #8892b0;
+  font-size: 14px;
+}
+
+.error-message {
+  text-align: center;
+  padding: 16px;
+  color: #ff6b9d;
+  font-size: 13px;
+  background: rgba(255, 107, 157, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 107, 157, 0.15);
+}

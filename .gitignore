@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.egg
+dist/
+build/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Electron
+out/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+.codebuddy/
+*.swp
+*.swo
+
+# Data
+backend/data/*.db
+backend/data/*.json
+backend/data/security/
+backend/data/emails/
+backend/data/calendar/
+backend/data/notifications.jsonl
+backend/data/keychain.json
+
+# Logs
+*.log
+backend/data/logs/
+
+# VRM model (user should provide their own)
+frontend/public/vrm-model.vrm
+
+# Screenshots
+/tmp/companion-screenshots/

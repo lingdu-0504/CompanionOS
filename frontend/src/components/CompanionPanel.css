@@ -1,0 +1,156 @@
+.companion-panel {
+  width: 280px;
+  height: 100%;
+  background: #16213e;
+  border-left: 1px solid #1a1a3e;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 16px;
+  overflow-y: auto;
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+/* 伴侣形象 */
+.companion-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatar-container {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f3460, #533483);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(100, 255, 218, 0.3);
+  box-shadow: 0 0 20px rgba(100, 255, 218, 0.1);
+}
+
+.avatar-placeholder {
+  font-size: 64px;
+  line-height: 1;
+}
+
+.avatar-label {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #64ffda;
+  font-weight: 500;
+}
+
+.vrm-toggle {
+  padding: 4px 12px;
+  border: 1px solid rgba(100, 255, 218, 0.3);
+  background: transparent;
+  color: #8892b0;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vrm-toggle:hover {
+  border-color: #64ffda;
+  color: #64ffda;
+}
+
+/* 情感气泡 */
+.emotion-bubble {
+  background: rgba(100, 255, 218, 0.08);
+  border-radius: 16px;
+  padding: 12px 16px;
+  position: relative;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.emotion-bubble.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.emotion-bubble.hidden {
+  opacity: 0.3;
+  transform: translateY(4px);
+}
+
+.emotion-bubble::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 24px;
+  width: 12px;
+  height: 12px;
+  background: rgba(100, 255, 218, 0.08);
+  transform: rotate(45deg);
+}
+
+.bubble-content {
+  font-size: 13px;
+  color: #ccd6f6;
+  line-height: 1.5;
+}
+
+/* 快捷互动 */
+.quick-interact {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.interact-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(100, 255, 218, 0.15);
+  background: rgba(100, 255, 218, 0.05);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.interact-btn:hover {
+  background: rgba(100, 255, 218, 0.15);
+  border-color: #64ffda;
+  transform: scale(1.1);
+}
+
+.interact-btn:active {
+  transform: scale(0.95);
+}
+
+/* 关系等级 */
+.relation-level {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.relation-badge {
+  font-size: 12px;
+  color: #64ffda;
+  font-weight: 600;
+}
+
+.relation-bar {
+  height: 4px;
+  background: rgba(100, 255, 218, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.relation-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #64ffda, #533483);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}

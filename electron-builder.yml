@@ -1,0 +1,75 @@
+# CompanionOS Electron Builder 配置
+
+appId: com.companion-os.desktop
+productName: CompanionOS
+copyright: Copyright © 2026 CompanionOS
+
+directories:
+  output: dist-electron
+  buildResources: electron/assets
+
+files:
+  - electron/**/*
+  - frontend/dist/**/*
+  - backend/**/*
+  - package.json
+  - "!**/node_modules/**"
+  - "!**/__pycache__/**"
+  - "!**/.git/**"
+
+extraResources:
+  - from: backend
+    to: backend
+    filter:
+      - "**/*"
+      - "!**/__pycache__/**"
+      - "!**/uv.lock"
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch:
+        - universal
+  icon: electron/assets/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: electron/entitlements.mac.plist
+  entitlementsInherit: electron/entitlements.mac.plist
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: electron/assets/icon.ico
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Office
+  icon: electron/assets/icon.png
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+publish:
+  provider: github
+  owner: companion-os
+  repo: companion-os

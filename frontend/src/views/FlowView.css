@@ -1,0 +1,350 @@
+.flow-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.flow-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(22, 33, 62, 0.9);
+  border-bottom: 1px solid rgba(100, 255, 218, 0.08);
+}
+
+.flow-name-input {
+  background: rgba(10, 10, 26, 0.6);
+  border: 1px solid rgba(100, 255, 218, 0.15);
+  border-radius: 6px;
+  color: #ccd6f6;
+  padding: 6px 12px;
+  font-size: 14px;
+  width: 200px;
+  outline: none;
+}
+
+.flow-name-input:focus {
+  border-color: #64ffda;
+}
+
+.flow-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  background: rgba(22, 33, 62, 0.8);
+  color: #ccd6f6;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.flow-btn:hover {
+  background: rgba(100, 255, 218, 0.1);
+  border-color: #64ffda;
+}
+
+.flow-btn.primary {
+  background: rgba(100, 255, 218, 0.15);
+  border-color: #64ffda;
+  color: #64ffda;
+}
+
+.flow-btn.primary:hover {
+  background: rgba(100, 255, 218, 0.25);
+}
+
+.flow-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.flow-load-select {
+  background: rgba(10, 10, 26, 0.6);
+  border: 1px solid rgba(100, 255, 218, 0.15);
+  border-radius: 6px;
+  color: #ccd6f6;
+  padding: 6px 10px;
+  font-size: 13px;
+  outline: none;
+  margin-left: auto;
+}
+
+.flow-body {
+  display: flex;
+  flex: 1;
+  height: 0;
+}
+
+.flow-sidebar {
+  width: 180px;
+  background: rgba(22, 33, 62, 0.8);
+  border-right: 1px solid rgba(100, 255, 218, 0.08);
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.flow-sidebar h3 {
+  color: #8892b0;
+  font-size: 13px;
+  margin: 0 0 10px 0;
+  font-weight: 500;
+}
+
+.flow-node-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 2px;
+}
+
+.flow-node-item:hover {
+  background: rgba(100, 255, 218, 0.08);
+}
+
+.fn-label {
+  font-size: 12px;
+  color: #ccd6f6;
+}
+
+.fn-add {
+  color: #5a6380;
+  font-size: 11px;
+}
+
+.flow-canvas {
+  flex: 1;
+  height: 100%;
+}
+
+/* Config panel */
+.flow-config-panel {
+  width: 240px;
+  background: rgba(22, 33, 62, 0.95);
+  border-left: 1px solid rgba(100, 255, 218, 0.08);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.flow-config-panel h3 {
+  color: #8892b0;
+  font-size: 13px;
+  margin: 0 0 12px 0;
+  font-weight: 500;
+}
+
+.config-node-name {
+  color: #64ffda;
+  font-size: 14px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: rgba(100, 255, 218, 0.05);
+  border-radius: 6px;
+}
+
+.config-field {
+  margin-bottom: 10px;
+}
+
+.config-field label {
+  display: block;
+  color: #8892b0;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.config-input {
+  width: 100%;
+  background: rgba(10, 10, 26, 0.6);
+  border: 1px solid rgba(100, 255, 218, 0.15);
+  border-radius: 4px;
+  color: #ccd6f6;
+  padding: 6px 8px;
+  font-size: 12px;
+  outline: none;
+}
+
+.config-input:focus {
+  border-color: #64ffda;
+}
+
+.config-save-btn,
+.config-cancel-btn {
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 6px;
+  border: 1px solid rgba(100, 255, 218, 0.2);
+}
+
+.config-save-btn {
+  background: rgba(100, 255, 218, 0.15);
+  color: #64ffda;
+}
+
+.config-cancel-btn {
+  background: transparent;
+  color: #8892b0;
+}
+
+/* Custom node */
+.custom-node {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 2px solid;
+  background: rgba(22, 33, 62, 0.9);
+  color: #ccd6f6;
+  font-size: 13px;
+  min-width: 120px;
+  text-align: center;
+  position: relative;
+}
+
+.custom-node.selected {
+  box-shadow: 0 0 12px rgba(100, 255, 218, 0.3);
+}
+
+.custom-node-label {
+  font-weight: 500;
+}
+
+.custom-node-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #64ffda;
+  color: #0a0a1a;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Execution result modal */
+.flow-result-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.flow-result-modal {
+  background: #16213e;
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.flow-result-modal h3 {
+  color: #ccd6f6;
+  margin: 0 0 16px 0;
+}
+
+.result-status {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.result-status.completed {
+  color: #64ffda;
+}
+
+.result-status.error,
+.result-status.failed {
+  color: #ff6b9d;
+}
+
+.result-duration {
+  color: #8892b0;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.result-detail {
+  background: rgba(10, 10, 26, 0.6);
+  border-radius: 8px;
+  padding: 12px;
+  color: #ccd6f6;
+  font-size: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.flow-result-modal button {
+  margin-top: 16px;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: 1px solid rgba(100, 255, 218, 0.2);
+  background: rgba(100, 255, 218, 0.1);
+  color: #ccd6f6;
+  cursor: pointer;
+}
+
+/* ReactFlow theme overrides */
+.react-flow__node {
+  font-size: 13px;
+}
+
+.react-flow__edge-path {
+  stroke: #64ffda;
+  stroke-width: 1.5;
+}
+
+.react-flow__controls button {
+  background: #16213e !important;
+  color: #ccd6f6 !important;
+  border-color: rgba(100, 255, 218, 0.2) !important;
+}
+
+.flow-error-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: rgba(255, 107, 157, 0.08);
+  border-bottom: 1px solid rgba(255, 107, 157, 0.15);
+}
+
+.flow-error-text {
+  font-size: 13px;
+  color: #ff6b9d;
+}
+
+.flow-error-close {
+  background: none;
+  border: none;
+  color: #ff6b9d;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.flow-error-close:hover {
+  background: rgba(255, 107, 157, 0.15);
+}
