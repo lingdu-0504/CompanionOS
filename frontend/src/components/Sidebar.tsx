@@ -4,6 +4,7 @@ import {
   MessageOutlined, 
   BranchesOutlined, 
   ScheduleOutlined, 
+  BookOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
 import { useAppStore } from '../stores/appStore';
@@ -14,6 +15,7 @@ const menuItems = [
   { key: 'chat', icon: <MessageOutlined />, label: '对话' },
   { key: 'flow', icon: <BranchesOutlined />, label: '流程' },
   { key: 'task', icon: <ScheduleOutlined />, label: '任务' },
+  { key: 'novel', icon: <BookOutlined />, label: '小说创作' },
   { key: 'settings', icon: <SettingOutlined />, label: '设置' },
 ] as const;
 

@@ -7,7 +7,7 @@ import { API_BASE } from '../config';
 
 interface AppStore {
   // 当前视图模式
-  currentView: 'home' | 'chat' | 'flow' | 'task' | 'settings';
+  currentView: 'home' | 'chat' | 'flow' | 'task' | 'novel' | 'settings';
   setCurrentView: (view: AppStore['currentView']) => void;
 
   // 伴侣状态

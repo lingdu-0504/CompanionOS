@@ -10,12 +10,14 @@ const ChatView = lazy(() => import('./views/ChatView'));
 const FlowView = lazy(() => import('./views/FlowView'));
 const TaskView = lazy(() => import('./views/TaskView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
+const NovelView = lazy(() => import('./views/NovelView'));
 
 const viewMap = {
   home: HomeView,
   chat: ChatView,
   flow: FlowView,
   task: TaskView,
+  novel: NovelView,
   settings: SettingsView,
 };
 

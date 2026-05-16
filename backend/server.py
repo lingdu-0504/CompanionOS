@@ -33,6 +33,7 @@ from agent_bridge import A2AGateway, EigentAdapter, MCPGateway  # noqa: E402
 from companion import UtsuwaEngine  # noqa: E402
 from daemon import CronScheduler, FileWatcher  # noqa: E402
 from memory import MemoryBridge, MemorySync  # noqa: E402
+from novel_writer import NovelWriterCore  # noqa: E402
 
 # ==================== 内部模块导入 ====================
 from router import AgentRouter  # noqa: E402
@@ -117,6 +118,34 @@ class EigentChainRequest(BaseModel):
     steps: list[dict]  # [{"agent_type": str, "action": str, "parameters": dict}]
 
 
+# ==================== 小说创作模型 ====================
+
+class NovelProjectCreate(BaseModel):
+    name: str
+    description: str = ""
+    genre: str = "fantasy"
+    target_word_count: int = 1000000
+    config: dict = {}
+
+
+class NovelChapterCreate(BaseModel):
+    number: int
+    title: str
+    content: str = ""
+
+
+class NovelChapterGenerate(BaseModel):
+    chapter_number: int
+    title: str
+    target_words: int | None = None
+
+
+class NovelPlatformPublish(BaseModel):
+    chapter_number: int
+    platform: str = "qidian"
+    config: dict = {}
+
+
 # ==================== 全局状态 ====================
 
 
@@ -129,6 +158,11 @@ class AppState:
         self.memory_bridge = MemoryBridge(DATA_DIR)
         self.memory_sync = MemorySync(self.memory_bridge)
         self.voice_service = VoiceService()
+
+        # 小说创作引擎
+        novel_data_dir = DATA_DIR / "novels"
+        novel_data_dir.mkdir(exist_ok=True)
+        self.novel_writer = NovelWriterCore(novel_data_dir)
 
         # 网关
         self.mcp_gateway = MCPGateway(data_dir=str(DATA_DIR))
@@ -662,6 +696,162 @@ async def learn_hermes_skill(name: str, pattern: str, template: str, description
     """学习新技能"""
     result = state.agent_router.hermes.learn_skill(name, pattern, template, description)
     return result
+
+
+# ---- 小说创作API ----
+
+
+@app.get("/api/novel/projects")
+async def list_novel_projects():
+    """列出所有小说项目"""
+    projects = state.novel_writer.list_projects()
+    return {"projects": [p.to_dict() for p in projects]}
+
+
+@app.post("/api/novel/projects")
+async def create_novel_project(request: NovelProjectCreate):
+    """创建新小说项目"""
+    project = state.novel_writer.create_project(
+        name=request.name,
+        description=request.description,
+        genre=request.genre,
+        target_word_count=request.target_word_count,
+    )
+    project.config.update(request.config)
+    project.save(state.novel_writer.data_dir)
+    return project.to_dict()
+
+
+@app.get("/api/novel/projects/{project_id}")
+async def get_novel_project(project_id: str):
+    """获取小说项目详情"""
+    project = state.novel_writer.get_project(project_id)
+    if not project:
+        return {"error": "项目不存在"}
+    return project.to_dict()
+
+
+@app.delete("/api/novel/projects/{project_id}")
+async def delete_novel_project(project_id: str):
+    """删除小说项目"""
+    success = state.novel_writer.delete_project(project_id)
+    return {"success": success}
+
+
+@app.get("/api/novel/projects/{project_id}/chapters")
+async def list_novel_chapters(project_id: str):
+    """列出小说章节"""
+    project = state.novel_writer.get_project(project_id)
+    if not project:
+        return {"error": "项目不存在"}
+    return {"chapters": [
+        {
+            "id": c.id,
+            "number": c.number,
+            "title": c.title,
+            "word_count": c.word_count,
+            "status": c.status,
+            "created_at": c.created_at,
+            "updated_at": c.updated_at,
+        }
+        for c in project.chapters
+    ]}
+
+
+@app.get("/api/novel/projects/{project_id}/chapters/{chapter_number}")
+async def get_novel_chapter(project_id: str, chapter_number: int):
+    """获取小说章节内容"""
+    project = state.novel_writer.get_project(project_id)
+    if not project:
+        return {"error": "项目不存在"}
+    chapter = project.get_chapter(chapter_number)
+    if not chapter:
+        return {"error": "章节不存在"}
+    return {
+        "id": chapter.id,
+        "number": chapter.number,
+        "title": chapter.title,
+        "content": chapter.content,
+        "word_count": chapter.word_count,
+        "status": chapter.status,
+        "created_at": chapter.created_at,
+        "updated_at": chapter.updated_at,
+    }
+
+
+@app.post("/api/novel/projects/{project_id}/chapters")
+async def create_novel_chapter(project_id: str, request: NovelChapterCreate):
+    """创建/更新小说章节"""
+    project = state.novel_writer.get_project(project_id)
+    if not project:
+        return {"error": "项目不存在"}
+    chapter = project.add_chapter(
+        title=request.title,
+        number=request.number,
+        content=request.content,
+    )
+    project.save(state.novel_writer.data_dir)
+    return {
+        "id": chapter.id,
+        "number": chapter.number,
+        "title": chapter.title,
+        "word_count": chapter.word_count,
+    }
+
+
+@app.post("/api/novel/projects/{project_id}/generate")
+async def generate_novel_chapter(project_id: str, request: NovelChapterGenerate):
+    """生成小说章节"""
+    result = await state.novel_writer.generate_chapter(
+        project_id=project_id,
+        chapter_title=request.title,
+        chapter_number=request.chapter_number,
+        target_words=request.target_words,
+    )
+    return result
+
+
+@app.post("/api/novel/projects/{project_id}/publish")
+async def publish_novel_chapter(project_id: str, request: NovelPlatformPublish):
+    """发布小说章节"""
+    project = state.novel_writer.get_project(project_id)
+    if not project:
+        return {"error": "项目不存在"}
+    result = await state.novel_writer.auto_publish(
+        project_id=project_id,
+        platform_config=request.model_dump(),
+    )
+    return result
+
+
+@app.get("/api/novel/tasks")
+async def list_novel_tasks(project_id: str | None = None):
+    """列出创作任务"""
+    tasks = state.novel_writer.parallel_manager.get_all_tasks(project_id)
+    return {"tasks": tasks}
+
+
+@app.get("/api/novel/tasks/{task_id}")
+async def get_novel_task(task_id: str):
+    """获取任务状态"""
+    task = state.novel_writer.get_task_status(task_id)
+    if not task:
+        return {"error": "任务不存在"}
+    return task
+
+
+@app.post("/api/novel/tasks/{task_id}/cancel")
+async def cancel_novel_task(task_id: str):
+    """取消任务"""
+    success = state.novel_writer.cancel_task(task_id)
+    return {"success": success}
+
+
+@app.get("/api/novel/platforms")
+async def list_novel_platforms():
+    """列出支持的发布平台"""
+    platforms = state.novel_writer.platform_publisher.get_platforms()
+    return {"platforms": platforms}
 
 
 # ---- 情绪分析API ----
