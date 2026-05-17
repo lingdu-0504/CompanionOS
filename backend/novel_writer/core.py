@@ -14,6 +14,8 @@ from .project import NovelProject
 from .engine import GlobalMemoryEngine, WordCountEngine, NarrativeStructureEngine
 from .platform import NovelPlatformPublisher, PlatformScheduler
 from .parallel import ParallelTaskManager, TaskType
+from .style_manager import StyleManager, StyleProfile, WritingStyle, ToneStyle, NarrativeMode, PRESET_STYLES
+from .intelligent_engine import IntelligentCreationEngine, CreationPhase
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,14 @@ class NovelWriterCore:
         self.platform_publisher = NovelPlatformPublisher()
         self.platform_scheduler = PlatformScheduler(self.platform_publisher)
         self.parallel_manager = ParallelTaskManager()
+        
+        # 新增：风格管理和智能创作引擎
+        self.style_manager = StyleManager(self.data_dir / "styles")
+        self.intelligent_engine = IntelligentCreationEngine(self.data_dir)
+        
+        # 设置回调
+        self.intelligent_engine.on_chapter_generated = self._on_chapter_generated_callback
+        self.intelligent_engine.on_publish = self._on_publish_callback
 
         # 项目存储
         self.projects: Dict[str, NovelProject] = {}
@@ -63,6 +73,7 @@ class NovelWriterCore:
 
         self._load_projects()
         self._register_task_handlers()
+        self._initialize_preset_styles()
 
     def _load_projects(self):
         """加载所有小说项目"""
@@ -592,6 +603,227 @@ class NovelWriterCore:
 
         return None
 
+    # ========== 风格管理 ==========
+    
+    def _initialize_preset_styles(self):
+        """初始化预设风格"""
+        # 将预设风格保存到风格管理器
+        for name, (style, tone, mode) in PRESET_STYLES.items():
+            if name not in self.style_manager.profiles:
+                self.style_manager.create_profile(
+                    name=name,
+                    style=style,
+                    tone=tone,
+                    narrative_mode=mode
+                )
+    
+    def get_all_styles(self):
+        """获取所有风格"""
+        return [
+            {
+                'id': p.name,
+                'name': p.name,
+                'description': f'{p.style.value} - {p.tone.value}',
+                'is_preset': p.name in PRESET_STYLES
+            }
+            for p in self.style_manager.profiles.values()
+        ]
+    
+    def get_style(self, style_id: str):
+        """获取指定风格"""
+        profile = self.style_manager.get_profile(style_id)
+        if profile:
+            return {
+                'id': profile.name,
+                'name': profile.name,
+                'description': f'{profile.style.value} - {profile.tone.value}',
+                'is_preset': profile.name in PRESET_STYLES
+            }
+        return None
+    
+    def create_style(self, style_data: dict):
+        """创建自定义风格"""
+        try:
+            profile = self.style_manager.create_profile(
+                name=style_data['name'],
+                style=WritingStyle(style_data.get('writing_style', 'fantasy')),
+                tone=ToneStyle(style_data.get('tone_style', 'serious')),
+                narrative_mode=NarrativeMode(style_data.get('narrative_mode', 'third_limited'))
+            )
+            return {
+                'id': profile.name,
+                'name': profile.name
+            }
+        except Exception as e:
+            logger.error(f"Failed to create style: {e}")
+            return None
+    
+    def update_style(self, style_id: str, updates: dict):
+        """更新风格"""
+        updated = self.style_manager.update_profile(style_id, updates)
+        if updated:
+            return {
+                'id': updated.name,
+                'name': updated.name
+            }
+        return None
+    
+    def delete_style(self, style_id: str):
+        """删除风格"""
+        return self.style_manager.delete_profile(style_id)
+    
+    async def analyze_text_style(self, text: str):
+        """分析文本风格"""
+        return self.style_manager.analyzer.analyze_text(text)
+    
+    async def generate_style_prompt(self, style_id: str, context: dict = None):
+        """生成风格提示词"""
+        prompt = self.style_manager.generate_style_prompt(style_id)
+        return {'prompt': prompt or ''}
+    
+    def apply_style_to_project(self, project_id: str, style_id: str):
+        """将风格应用到项目"""
+        project = self.get_project(project_id)
+        if not project:
+            return False
+        project.config["style_id"] = style_id
+        project.save(self.data_dir)
+        return True
+    
+    # ========== 智能创作引擎 ==========
+    
+    def _on_chapter_generated_callback(self, project_id: str, chapter: dict):
+        """章节生成回调"""
+        logger.info(f"Chapter generated: Project {project_id}, Chapter {chapter.get('number')}")
+    
+    def _on_publish_callback(self, project_id: str, result: dict):
+        """发布回调"""
+        logger.info(f"Publish completed: Project {project_id}, Result {result}")
+    
+    async def create_creation_plan(self, project_id: str, plan_config: dict):
+        """创建创作计划"""
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+        
+        total_chapters = plan_config.get('total_chapters', 100)
+        start_chapter = plan_config.get('start_chapter', 1)
+        
+        plan = await self.intelligent_engine.create_generation_plan(
+            project_id=project_id,
+            start_chapter=start_chapter,
+            end_chapter=total_chapters,
+            auto_publish=plan_config.get('auto_publish', False),
+            style_profile=plan_config.get('style_profile')
+        )
+        
+        return {
+            'success': True,
+            'plan': {
+                'project_id': plan.project_id,
+                'start_chapter': plan.start_chapter,
+                'end_chapter': plan.end_chapter,
+                'total_chapters': total_chapters
+            }
+        }
+    
+    def get_creation_plan(self, project_id: str):
+        """获取创作计划"""
+        status = self.intelligent_engine.get_plan_status(project_id)
+        return status if status else None
+    
+    async def execute_creation_plan(self, project_id: str, start_chapter: int = None, end_chapter: int = None):
+        """执行创作计划"""
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+        
+        # 如果没有现有的计划，先创建一个
+        if project_id not in self.intelligent_engine.active_plans:
+            await self.create_creation_plan(project_id, {
+                'total_chapters': end_chapter or (len(project.chapters) + 10),
+                'start_chapter': start_chapter or (len(project.chapters) + 1)
+            })
+        
+        result = await self.intelligent_engine.execute_plan(project_id, self)
+        return result
+    
+    def add_chapter_outline(self, project_id: str, chapter_outline: dict):
+        """添加章节大纲"""
+        project = self.get_project(project_id)
+        if not project:
+            return None
+        
+        outline = self.intelligent_engine.generate_chapter_outline(
+            project, chapter_outline.get('number', 1)
+        )
+        
+        return {
+            'success': True,
+            'outline': {
+                'chapter_number': outline.chapter_number,
+                'title': outline.title,
+                'key_events': outline.key_events
+            }
+        }
+    
+    def get_chapter_outlines(self, project_id: str):
+        """获取章节大纲列表"""
+        # 简化实现，实际可以从文件或数据库加载
+        return []
+    
+    async def analyze_creation_quality(self, project_id: str):
+        """分析创作质量"""
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+        
+        analysis = await self.intelligent_engine.analyze_creation_quality(project)
+        return {
+            'success': True,
+            'quality': analysis
+        }
+    
+    def get_automation_levels(self):
+        """获取自动化等级信息"""
+        return {
+            "levels": [
+                {
+                    "level": 1,
+                    "name": "手动创作",
+                    "description": "完全手动创作，仅提供基础工具"
+                },
+                {
+                    "level": 2,
+                    "name": "辅助创作",
+                    "description": "提供章节生成、一致性检查等辅助功能"
+                },
+                {
+                    "level": 3,
+                    "name": "半自动创作",
+                    "description": "支持风格保持、多章节连续生成"
+                },
+                {
+                    "level": 4,
+                    "name": "全自动创作",
+                    "description": "完整创作计划、自动发布、智能建议"
+                }
+            ],
+            "current_level": 4,
+            "features": [
+                "全局一致性记忆引擎",
+                "精确字数控制",
+                "叙事结构规划",
+                "风格学习与保持",
+                "多章节连续生成",
+                "智能创作计划",
+                "自动平台发布",
+                "创作质量分析",
+                "并行任务调度",
+                "定时任务管理"
+            ]
+        }
+    
     async def close(self):
         """关闭资源"""
         await self.platform_publisher.close()

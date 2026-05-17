@@ -127,6 +127,36 @@ class NovelProjectCreate(BaseModel):
     target_word_count: int = 1000000
     config: dict = {}
 
+class NovelStyleCreate(BaseModel):
+    name: str
+    description: str = ""
+    writing_style: str = "fiction"
+    tone_style: str = "neutral"
+    narrative_mode: str = "third_person"
+    features: dict = {}
+    keywords: list = []
+    examples: list = []
+
+class NovelCreationPlanCreate(BaseModel):
+    total_chapters: int = 100
+    start_chapter: int = 1
+    words_per_chapter: int = 3000
+    narrative_arc: str = "hero_journey"
+    auto_publish: bool = False
+    publish_platform: str = ""
+    publish_schedule: dict = {}
+
+class NovelChapterOutlineCreate(BaseModel):
+    number: int
+    title: str
+    summary: str = ""
+    key_events: list = []
+    character_arcs: dict = {}
+    word_count: int = 3000
+
+class NovelTextAnalysisRequest(BaseModel):
+    text: str
+
 
 class NovelChapterCreate(BaseModel):
     number: int
@@ -852,6 +882,172 @@ async def list_novel_platforms():
     """列出支持的发布平台"""
     platforms = state.novel_writer.platform_publisher.get_platforms()
     return {"platforms": platforms}
+
+
+# ---- 风格管理 API ----
+
+@app.get("/api/novel/styles")
+async def list_novel_styles():
+    """列出所有创作风格"""
+    styles = state.novel_writer.get_all_styles()
+    return {"styles": [s.to_dict() if hasattr(s, 'to_dict') else {
+        "id": s.id,
+        "name": s.name,
+        "description": s.description,
+        "is_preset": s.is_preset
+    } for s in styles]}
+
+
+@app.get("/api/novel/styles/{style_id}")
+async def get_novel_style(style_id: str):
+    """获取创作风格详情"""
+    style = state.novel_writer.get_style(style_id)
+    if not style:
+        return {"error": "风格不存在"}
+    return style.to_dict() if hasattr(style, 'to_dict') else {
+        "id": style.id,
+        "name": style.name,
+        "description": style.description,
+        "is_preset": style.is_preset
+    }
+
+
+@app.post("/api/novel/styles")
+async def create_novel_style(request: NovelStyleCreate):
+    """创建自定义创作风格"""
+    try:
+        saved_style = state.novel_writer.create_style({
+            'name': request.name,
+            'description': request.description,
+            'writing_style': request.writing_style,
+            'tone_style': request.tone_style,
+            'narrative_mode': request.narrative_mode
+        })
+        if saved_style:
+            return saved_style
+        return {"error": "Failed to create style"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.put("/api/novel/styles/{style_id}")
+async def update_novel_style(style_id: str, updates: dict):
+    """更新创作风格"""
+    updated_style = state.novel_writer.update_style(style_id, updates)
+    if not updated_style:
+        return {"error": "风格不存在"}
+    return updated_style.to_dict() if hasattr(updated_style, 'to_dict') else {
+        "id": updated_style.id,
+        "name": updated_style.name,
+        "description": updated_style.description,
+        "is_preset": updated_style.is_preset
+    }
+
+
+@app.delete("/api/novel/styles/{style_id}")
+async def delete_novel_style(style_id: str):
+    """删除创作风格"""
+    success = state.novel_writer.delete_style(style_id)
+    return {"success": success}
+
+
+@app.post("/api/novel/styles/analyze")
+async def analyze_text_style(request: NovelTextAnalysisRequest):
+    """分析文本风格"""
+    analysis = await state.novel_writer.analyze_text_style(request.text)
+    return {"analysis": analysis}
+
+
+@app.post("/api/novel/styles/{style_id}/prompt")
+async def generate_style_prompt(style_id: str, context: dict = None):
+    """生成风格提示词"""
+    prompt = await state.novel_writer.generate_style_prompt(style_id, context or {})
+    return {"prompt": prompt}
+
+
+@app.post("/api/novel/projects/{project_id}/style")
+async def apply_style_to_project(project_id: str, request: dict):
+    """将风格应用到项目"""
+    style_id = request.get("style_id")
+    success = state.novel_writer.apply_style_to_project(project_id, style_id)
+    return {"success": success}
+
+
+# ---- 智能创作 API ----
+
+@app.post("/api/novel/projects/{project_id}/plan")
+async def create_creation_plan(project_id: str, request: NovelCreationPlanCreate):
+    """创建创作计划"""
+    try:
+        plan = await state.novel_writer.create_creation_plan(project_id, request.model_dump())
+        return {
+            "success": True,
+            "plan": plan.to_dict() if hasattr(plan, 'to_dict') else plan
+        }
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/novel/projects/{project_id}/plan")
+async def get_creation_plan(project_id: str):
+    """获取创作计划"""
+    plan = state.novel_writer.get_creation_plan(project_id)
+    if not plan:
+        return {"error": "创作计划不存在"}
+    return plan.to_dict() if hasattr(plan, 'to_dict') else plan
+
+
+@app.post("/api/novel/projects/{project_id}/plan/execute")
+async def execute_creation_plan(project_id: str, request: dict = None):
+    """执行创作计划"""
+    try:
+        start_chapter = request.get("start_chapter") if request else None
+        end_chapter = request.get("end_chapter") if request else None
+        result = await state.novel_writer.execute_creation_plan(project_id, start_chapter, end_chapter)
+        return {
+            "success": True,
+            "result": result
+        }
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/api/novel/projects/{project_id}/outlines")
+async def add_chapter_outline(project_id: str, request: NovelChapterOutlineCreate):
+    """添加章节大纲"""
+    outline = state.novel_writer.add_chapter_outline(project_id, request.model_dump())
+    return {
+        "success": True,
+        "outline": outline.to_dict() if hasattr(outline, 'to_dict') else outline
+    }
+
+
+@app.get("/api/novel/projects/{project_id}/outlines")
+async def get_chapter_outlines(project_id: str):
+    """获取章节大纲列表"""
+    outlines = state.novel_writer.get_chapter_outlines(project_id)
+    return {
+        "outlines": [o.to_dict() if hasattr(o, 'to_dict') else o for o in outlines]
+    }
+
+
+@app.get("/api/novel/projects/{project_id}/quality")
+async def analyze_creation_quality(project_id: str):
+    """分析创作质量"""
+    try:
+        quality = await state.novel_writer.analyze_creation_quality(project_id)
+        return {
+            "success": True,
+            "quality": quality
+        }
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/api/novel/automation-levels")
+async def get_automation_levels():
+    """获取自动化等级信息"""
+    return state.novel_writer.get_automation_levels()
 
 
 # ---- 情绪分析API ----

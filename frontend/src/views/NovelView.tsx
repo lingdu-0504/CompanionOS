@@ -55,6 +55,10 @@ import {
   SyncOutlined,
   EyeOutlined,
   LoadingOutlined,
+  BulbOutlined,
+  ExperimentOutlined,
+  RobotOutlined,
+  LineChartOutlined,
 } from '@ant-design/icons';
 import type { NovelProject, NovelChapter, GenerationResult } from '../types/novel';
 import { novelApi } from '../services/novelApi';
@@ -90,14 +94,22 @@ const NovelView: React.FC = () => {
   const [selectedChapter, setSelectedChapter] = useState<NovelChapter | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const [styles, setStyles] = useState<any[]>([]);
+  const [creationPlan, setCreationPlan] = useState<any>(null);
+  const [chapterOutlines, setChapterOutlines] = useState<any[]>([]);
+  const [automationInfo, setAutomationInfo] = useState<any>(null);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [generateModalVisible, setGenerateModalVisible] = useState(false);
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [publishModalVisible, setPublishModalVisible] = useState(false);
+  const [styleModalVisible, setStyleModalVisible] = useState(false);
+  const [planModalVisible, setPlanModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [generateForm] = Form.useForm();
   const [settingsForm] = Form.useForm();
   const [publishForm] = Form.useForm();
+  const [styleForm] = Form.useForm();
+  const [planForm] = Form.useForm();
 
   // 统计数据
   const stats = useMemo(() => {
@@ -159,18 +171,62 @@ const NovelView: React.FC = () => {
     }
   }, []);
 
+  // 加载风格列表
+  const loadStyles = useCallback(async () => {
+    try {
+      const data = await novelApi.getStyles();
+      setStyles(data);
+    } catch (error) {
+      console.error('Failed to load styles:', error);
+    }
+  }, []);
+
+  // 加载创作计划
+  const loadCreationPlan = useCallback(async (projectId: string) => {
+    try {
+      const data = await novelApi.getCreationPlan(projectId);
+      setCreationPlan(data);
+    } catch (error) {
+      console.error('Failed to load creation plan:', error);
+    }
+  }, []);
+
+  // 加载章节大纲
+  const loadChapterOutlines = useCallback(async (projectId: string) => {
+    try {
+      const data = await novelApi.getChapterOutlines(projectId);
+      setChapterOutlines(data.outlines || []);
+    } catch (error) {
+      console.error('Failed to load chapter outlines:', error);
+    }
+  }, []);
+
+  // 加载自动化信息
+  const loadAutomationInfo = useCallback(async () => {
+    try {
+      const data = await novelApi.getAutomationLevels();
+      setAutomationInfo(data);
+    } catch (error) {
+      console.error('Failed to load automation info:', error);
+    }
+  }, []);
+
   useEffect(() => {
     loadProjects();
     loadPlatforms();
-  }, [loadProjects, loadPlatforms]);
+    loadStyles();
+    loadAutomationInfo();
+  }, [loadProjects, loadPlatforms, loadStyles, loadAutomationInfo]);
 
   // 选择项目
   const handleSelectProject = useCallback((project: NovelProject) => {
     setSelectedProject(project);
     loadChapters(project.id);
     loadTasks(project.id);
+    loadCreationPlan(project.id);
+    loadChapterOutlines(project.id);
     setSelectedChapter(null);
-  }, [loadChapters, loadTasks]);
+  }, [loadChapters, loadTasks, loadCreationPlan, loadChapterOutlines]);
 
   // 创建项目
   const handleCreateProject = useCallback(async (values: any) => {
@@ -249,6 +305,67 @@ const NovelView: React.FC = () => {
       message.error('发布失败');
     }
   }, [selectedProject, publishForm]);
+
+  // 创建风格
+  const handleCreateStyle = useCallback(async (values: any) => {
+    try {
+      await novelApi.createStyle(values);
+      message.success('✨ 风格创建成功');
+      setStyleModalVisible(false);
+      styleForm.resetFields();
+      await loadStyles();
+    } catch (error) {
+      message.error('风格创建失败');
+    }
+  }, [loadStyles]);
+
+  // 应用风格到项目
+  const handleApplyStyle = useCallback(async (styleId: string) => {
+    if (!selectedProject) return;
+    try {
+      await novelApi.applyStyleToProject(selectedProject.id, styleId);
+      message.success('✨ 风格应用成功');
+      loadProjects();
+    } catch (error) {
+      message.error('风格应用失败');
+    }
+  }, [selectedProject, loadProjects]);
+
+  // 创建创作计划
+  const handleCreatePlan = useCallback(async (values: any) => {
+    if (!selectedProject) return;
+    try {
+      await novelApi.createCreationPlan(selectedProject.id, values);
+      message.success('✨ 创作计划创建成功');
+      setPlanModalVisible(false);
+      planForm.resetFields();
+      await loadCreationPlan(selectedProject.id);
+    } catch (error) {
+      message.error('创作计划创建失败');
+    }
+  }, [selectedProject, loadCreationPlan]);
+
+  // 执行创作计划
+  const handleExecutePlan = useCallback(async () => {
+    if (!selectedProject) return;
+    try {
+      notification.info({
+        message: '🚀 开始自动创作',
+        description: '正在执行创作计划...',
+        duration: 0,
+      });
+
+      await novelApi.executeCreationPlan(selectedProject.id);
+
+      notification.destroy();
+      message.success('✨ 创作计划执行完成');
+      await loadChapters(selectedProject.id);
+      await loadTasks(selectedProject.id);
+    } catch (error) {
+      notification.destroy();
+      message.error('创作计划执行失败');
+    }
+  }, [selectedProject, loadChapters, loadTasks]);
 
   // 获取状态颜色
   const getStatusColor = (status: string) => {
@@ -594,6 +711,163 @@ const NovelView: React.FC = () => {
                     />
                   </div>
                 </TabPane>
+
+                <TabPane 
+                  tab={
+                    <span className="tab-title">
+                      <ExperimentOutlined /> 创作风格
+                    </span>
+                  } 
+                  key="styles"
+                >
+                  <div className="styles-section">
+                    <div style={{ marginBottom: 16 }}>
+                      <Button 
+                        type="primary" 
+                        icon={<PlusOutlined />}
+                        onClick={() => setStyleModalVisible(true)}
+                        className="glow-button"
+                      >
+                        创建风格
+                      </Button>
+                    </div>
+                    <List
+                      grid={{ gutter: 16, xs: 1, sm: 2, md: 3 }}
+                      dataSource={styles}
+                      renderItem={style => (
+                        <List.Item>
+                          <Card className="style-card">
+                            <div className="style-header">
+                              <BulbOutlined className="style-icon" />
+                              <Text strong>{style.name}</Text>
+                              {style.is_preset && (
+                                <Tag color="blue" size="small">预设</Tag>
+                              )}
+                            </div>
+                            <Text type="secondary" className="style-description">
+                              {style.description}
+                            </Text>
+                            <div className="style-actions">
+                              {selectedProject && (
+                                <Button 
+                                  size="small" 
+                                  type="primary" 
+                                  onClick={() => handleApplyStyle(style.id)}
+                                >
+                                  应用
+                                </Button>
+                              )}
+                              {!style.is_preset && (
+                                <Button size="small" danger icon={<DeleteOutlined />}>
+                                  删除
+                                </Button>
+                              )}
+                            </div>
+                          </Card>
+                        </List.Item>
+                      )}
+                      locale={{ emptyText: '暂无创作风格' }}
+                    />
+                  </div>
+                </TabPane>
+
+                <TabPane 
+                  tab={
+                    <span className="tab-title">
+                      <RobotOutlined /> 智能创作
+                    </span>
+                  } 
+                  key="intelligent"
+                >
+                  <div className="intelligent-section">
+                    {automationInfo && (
+                      <Card className="automation-card" style={{ marginBottom: 16 }}>
+                        <Title level={4}>
+                          <LineChartOutlined /> 自动化等级
+                        </Title>
+                        <div>
+                          <Text>当前等级: </Text>
+                          <Tag color="green">{automationInfo.current_level}</Tag>
+                        </div>
+                        <List
+                          size="small"
+                          dataSource={automationInfo.features}
+                          renderItem={feature => (
+                            <List.Item>
+                              <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+                              {feature}
+                            </List.Item>
+                          )}
+                        />
+                      </Card>
+                    )}
+
+                    {!creationPlan ? (
+                      <Card>
+                        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                          <RobotOutlined style={{ fontSize: 48, color: '#6366f1', marginBottom: 16 }} />
+                          <Title level={4}>还没有创作计划</Title>
+                          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                            创建一个智能创作计划，让AI帮你自动生成多章节内容
+                          </Text>
+                          {selectedProject && (
+                            <Button 
+                              type="primary" 
+                              size="large" 
+                              icon={<PlusOutlined />}
+                              onClick={() => setPlanModalVisible(true)}
+                              className="glow-button"
+                            >
+                              创建创作计划
+                            </Button>
+                          )}
+                        </div>
+                      </Card>
+                    ) : (
+                      <div>
+                        <Card style={{ marginBottom: 16 }}>
+                          <div className="plan-header">
+                            <div>
+                              <Title level={4}>创作计划</Title>
+                              <Text type="secondary">
+                                共 {creationPlan.total_chapters} 章，每章 {creationPlan.words_per_chapter} 字
+                              </Text>
+                            </div>
+                            <Button 
+                              type="primary" 
+                              icon={<PlayCircleOutlined />}
+                              onClick={handleExecutePlan}
+                              className="glow-button"
+                            >
+                              开始创作
+                            </Button>
+                          </div>
+                        </Card>
+
+                        <Card title="章节大纲">
+                          {chapterOutlines.length > 0 ? (
+                            <List
+                              dataSource={chapterOutlines}
+                              renderItem={outline => (
+                                <List.Item>
+                                  <List.Item.Meta
+                                    avatar={<Badge count={outline.number} />}
+                                    title={outline.title}
+                                    description={outline.summary}
+                                  />
+                                </List.Item>
+                              )}
+                            />
+                          ) : (
+                            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                              <Text type="secondary">暂无章节大纲</Text>
+                            </div>
+                          )}
+                        </Card>
+                      </div>
+                    )}
+                  </div>
+                </TabPane>
               </Tabs>
 
               {/* 章节预览 */}
@@ -895,6 +1169,183 @@ const NovelView: React.FC = () => {
               <Button onClick={() => setSettingsModalVisible(false)}>取消</Button>
               <Button type="primary" htmlType="submit" className="glow-button">
                 保存设置
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 创建风格弹窗 */}
+      <Modal
+        title={
+          <Space>
+            <BulbOutlined />
+            <span>创建创作风格</span>
+          </Space>
+        }
+        open={styleModalVisible}
+        onCancel={() => setStyleModalVisible(false)}
+        footer={null}
+        width={600}
+        className="sci-fi-modal"
+      >
+        <Form form={styleForm} layout="vertical" onFinish={handleCreateStyle}>
+          <Form.Item
+            label="风格名称"
+            name="name"
+            rules={[{ required: true, message: '请输入风格名称' }]}
+          >
+            <Input placeholder="例如：热血战斗" size="large" />
+          </Form.Item>
+          <Form.Item label="风格描述" name="description">
+            <TextArea rows={3} placeholder="描述这个创作风格的特点..." />
+          </Form.Item>
+          <Form.Item
+            label="写作风格"
+            name="writing_style"
+            initialValue="fiction"
+          >
+            <Select size="large">
+              <Option value="fiction">小说</Option>
+              <Option value="poetry">诗歌</Option>
+              <Option value="essay">散文</Option>
+              <Option value="drama">戏剧</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            label="语气风格"
+            name="tone_style"
+            initialValue="neutral"
+          >
+            <Select size="large">
+              <Option value="neutral">中性</Option>
+              <Option value="humorous">幽默</Option>
+              <Option value="serious">严肃</Option>
+              <Option value="romantic">浪漫</Option>
+              <Option value="epic">史诗</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            label="叙事视角"
+            name="narrative_mode"
+            initialValue="third_person"
+          >
+            <Select size="large">
+              <Option value="first_person">第一人称</Option>
+              <Option value="third_person">第三人称</Option>
+              <Option value="omniscient">全知视角</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            label="关键词"
+            name="keywords"
+            help="用逗号分隔"
+          >
+            <Input placeholder="例如：热血, 战斗, 升级" />
+          </Form.Item>
+          <Form.Item>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button onClick={() => setStyleModalVisible(false)}>取消</Button>
+              <Button type="primary" htmlType="submit" className="glow-button">
+                创建风格
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 创建创作计划弹窗 */}
+      <Modal
+        title={
+          <Space>
+            <RobotOutlined />
+            <span>创建智能创作计划</span>
+          </Space>
+        }
+        open={planModalVisible}
+        onCancel={() => setPlanModalVisible(false)}
+        footer={null}
+        width={600}
+        className="sci-fi-modal"
+      >
+        <Form form={planForm} layout="vertical" onFinish={handleCreatePlan}>
+          <Form.Item
+            label="总章节数"
+            name="total_chapters"
+            initialValue={100}
+            rules={[{ required: true, message: '请输入总章节数' }]}
+          >
+            <InputNumber
+              min={1}
+              max={1000}
+              style={{ width: '100%' }}
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item
+            label="起始章节"
+            name="start_chapter"
+            initialValue={1}
+          >
+            <InputNumber
+              min={1}
+              style={{ width: '100%' }}
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item
+            label="每章字数"
+            name="words_per_chapter"
+            initialValue={3000}
+          >
+            <InputNumber
+              min={1000}
+              max={20000}
+              step={500}
+              style={{ width: '100%' }}
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item
+            label="叙事弧光"
+            name="narrative_arc"
+            initialValue="hero_journey"
+          >
+            <Select size="large">
+              <Option value="hero_journey">英雄之旅</Option>
+              <Option value="three_act">三幕式结构</Option>
+              <Option value="five_act">五幕式结构</Option>
+              <Option value="web_novel">网文结构</Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            label="自动发布"
+            name="auto_publish"
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+          <Form.Item
+            label="发布平台"
+            name="publish_platform"
+            initialValue="qidian"
+            dependencies={['auto_publish']}
+          >
+            {(form) =>
+              form.getFieldValue('auto_publish') ? (
+                <Select size="large">
+                  <Option value="qidian">起点中文网</Option>
+                  <Option value="zongheng">纵横中文网</Option>
+                  <Option value="17k">17K小说网</Option>
+                </Select>
+              ) : null
+            }
+          </Form.Item>
+          <Form.Item>
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button onClick={() => setPlanModalVisible(false)}>取消</Button>
+              <Button type="primary" htmlType="submit" className="glow-button">
+                创建计划
               </Button>
             </Space>
           </Form.Item>

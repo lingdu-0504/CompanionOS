@@ -546,6 +546,123 @@
   color: #6b7280 !important;
 }
 
+/* 风格管理样式 */
+.styles-section {
+  min-height: 200px;
+}
+
+.style-card {
+  background: rgba(17, 24, 39, 0.6) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  transition: all 0.3s ease;
+}
+
+.style-card:hover {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
+  transform: translateY(-4px);
+}
+
+.style-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.style-icon {
+  font-size: 20px;
+  color: #f59e0b;
+}
+
+.style-description {
+  font-size: 14px;
+  color: #9ca3af;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.style-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* 智能创作样式 */
+.intelligent-section {
+  min-height: 200px;
+}
+
+.automation-card {
+  background: rgba(17, 24, 39, 0.8) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 16px !important;
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.plan-header h4 {
+  margin-bottom: 8px !important;
+}
+
+/* 动画 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.3));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.6));
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
   .novel-content {
@@ -563,5 +680,11 @@
   
   .novel-tabs {
     padding: 16px;
+  }
+  
+  .plan-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
   }
 }
