@@ -1,97 +1,194 @@
 /**
- * 小说创作视图样式
+ * 小说创作工作台样式 - 科幻主题
+ * Novel Writing Workbench Styles - Sci-Fi Theme
  */
 
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* 基础布局 */
 .novel-view {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
 }
 
 .novel-layout {
-  flex: 1;
-  min-height: 0;
+  height: 100%;
+  background: transparent;
 }
 
+/* 背景效果 */
+.grid-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glow-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+  animation: float 6s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+  top: -100px;
+  right: -100px;
+}
+
+.orb-2 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, transparent 70%);
+  bottom: -50px;
+  left: -50px;
+  animation-delay: -3s;
+}
+
+.orb-center {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, transparent 70%);
+}
+
+/* 侧边栏 */
 .novel-sider {
-  background: #fafafa;
-  border-right: 1px solid #e8e8e8;
+  background: rgba(17, 24, 39, 0.95) !important;
+  backdrop-filter: blur(16px);
+  border-right: 1px solid rgba(99, 102, 241, 0.2) !important;
   display: flex;
   flex-direction: column;
 }
 
 .sider-header {
-  padding: 16px;
-  border-bottom: 1px solid #e8e8e8;
+  padding: 24px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 }
 
-.sider-header h4 {
-  margin: 0;
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  font-size: 24px;
+  color: #6366f1;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* 项目列表 */
+.project-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
 }
 
 .project-item {
+  padding: 16px;
+  margin-bottom: 12px;
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  border-radius: 12px;
   cursor: pointer;
-  padding: 12px 16px !important;
-  border-bottom: 1px solid #f0f0f0;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
 .project-item:hover {
-  background: #f5f5f5;
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateX(4px);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
 }
 
 .project-item.active {
-  background: #e6f7ff;
-  border-left: 3px solid #1890ff;
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
 }
 
-.project-item-content {
-  width: 100%;
-}
-
-.project-title {
+.project-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .project-icon {
-  color: #1890ff;
+  font-size: 20px;
+  color: #6366f1;
+}
+
+.project-name {
+  font-size: 16px;
+  color: #e0e6ed;
+  font-weight: 600;
 }
 
 .project-meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-.project-progress {
+.genre-tag {
+  font-size: 12px;
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: #818cf8 !important;
+}
+
+.progress-text {
+  font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
 }
 
+/* 快捷操作 */
+.quick-actions {
+  padding: 16px;
+}
+
+.action-button {
+  background: rgba(17, 24, 39, 0.8) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  color: #e0e6ed !important;
+}
+
+.action-button:hover {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-color: rgba(99, 102, 241, 0.6) !important;
+}
+
+/* 主内容区 */
 .novel-content {
-  padding: 24px;
-  overflow: auto;
-}
-
-.empty-state {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #8c8c8c;
-}
-
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  color: #d9d9d9;
+  padding: 32px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .project-detail {
@@ -106,47 +203,365 @@
   align-items: flex-start;
 }
 
-.project-header h2 {
-  margin: 0 0 8px 0;
+.project-info h2 {
+  margin-bottom: 8px;
 }
 
-.project-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+.description {
+  color: #9ca3af;
+  font-size: 15px;
+  margin-bottom: 0 !important;
+}
+
+/* 统计卡片 */
+.stats-row {
+  margin-bottom: 8px;
 }
 
 .stat-card {
-  text-align: center;
+  background: rgba(17, 24, 39, 0.8) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 16px !important;
+  transition: all 0.3s ease;
 }
 
-.stat-value {
-  font-size: 28px;
-  font-weight: 600;
-  color: #1890ff;
-  margin-bottom: 4px;
+.stat-card:hover {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
+  transform: translateY(-2px);
 }
 
-.stat-label {
-  font-size: 14px;
-  color: #8c8c8c;
+.stat-card .ant-statistic-title {
+  color: #9ca3af;
+  font-size: 13px;
+  margin-bottom: 8px;
 }
 
+.progress-bar {
+  margin-top: 8px;
+}
+
+/* 标签页 */
 .novel-tabs {
-  flex: 1;
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.novel-tabs .ant-tabs-nav {
+  margin-bottom: 24px;
+}
+
+.novel-tabs .ant-tabs-nav::before {
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.tab-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #9ca3af;
+}
+
+.ant-tabs-tab-active .tab-title {
+  color: #6366f1;
+}
+
+.ant-tabs-tab:hover .tab-title {
+  color: #818cf8;
+}
+
+.ant-tabs-ink-bar {
+  background: linear-gradient(90deg, #6366f1, #06b6d4) !important;
+}
+
+/* 章节列表 */
+.chapters-section {
+  min-height: 200px;
 }
 
 .chapter-item {
-  cursor: pointer;
-  transition: all 0.2s;
+  padding: 16px !important;
+  margin-bottom: 12px;
+  background: rgba(17, 24, 39, 0.5);
+  border: 1px solid rgba(99, 102, 241, 0.1) !important;
+  border-radius: 12px;
+  transition: all 0.3s ease;
 }
 
 .chapter-item:hover {
-  background: #fafafa;
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.3) !important;
 }
 
 .chapter-item.active {
-  background: #e6f7ff;
-  border-left: 3px solid #1890ff;
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.5) !important;
 }
 
+.chapter-title {
+  font-size: 15px;
+  color: #e0e6ed;
+}
+
+.chapter-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+
+.status-tag {
+  font-size: 12px;
+}
+
+.chapter-date {
+  font-size: 12px;
+}
+
+.chapter-action {
+  background: rgba(99, 102, 241, 0.1) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  color: #818cf8 !important;
+}
+
+.chapter-action:hover {
+  background: rgba(99, 102, 241, 0.2) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+}
+
+/* 任务列表 */
+.tasks-section {
+  min-height: 200px;
+}
+
+.task-item {
+  padding: 16px !important;
+  margin-bottom: 12px;
+  background: rgba(17, 24, 39, 0.5);
+  border: 1px solid rgba(99, 102, 241, 0.1) !important;
+  border-radius: 12px;
+}
+
+/* 平台列表 */
+.platforms-section {
+  min-height: 200px;
+}
+
+.platform-card {
+  background: rgba(17, 24, 39, 0.6) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  transition: all 0.3s ease;
+}
+
+.platform-card:hover {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
+  transform: translateY(-4px);
+}
+
+.platform-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.platform-icon {
+  font-size: 20px;
+  color: #06b6d4;
+}
+
+.platform-status {
+  margin-bottom: 12px;
+}
+
+.platform-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 章节预览 */
+.chapter-preview {
+  background: rgba(17, 24, 39, 0.8) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 16px !important;
+}
+
+.chapter-content {
+  color: #9ca3af;
+  font-size: 15px;
+  line-height: 1.8;
+  text-indent: 2em;
+}
+
+/* 空状态 */
+.empty-state {
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: rgba(99, 102, 241, 0.5);
+  margin-bottom: 16px;
+}
+
+.empty-state-full {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+}
+
+.empty-icon-large {
+  font-size: 80px;
+  color: rgba(99, 102, 241, 0.3);
+  margin-bottom: 24px;
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.empty-description {
+  font-size: 16px;
+  margin-bottom: 32px !important;
+}
+
+.create-link {
+  color: #6366f1 !important;
+}
+
+/* 按钮样式 */
+.glow-button {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  border: none !important;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+  transition: all 0.3s ease;
+}
+
+.glow-button:hover {
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%) !important;
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+  transform: translateY(-2px);
+}
+
+.glow-button:active {
+  transform: translateY(0);
+}
+
+/* 模态框样式 */
+.sci-fi-modal .ant-modal-content {
+  background: rgba(17, 24, 39, 0.95) !important;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 16px;
+}
+
+.sci-fi-modal .ant-modal-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.sci-fi-modal .ant-modal-title {
+  color: #e0e6ed;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.sci-fi-modal .ant-modal-close {
+  color: #9ca3af;
+}
+
+.sci-fi-modal .ant-modal-close:hover {
+  color: #e0e6ed;
+}
+
+.sci-fi-modal .ant-modal-body {
+  padding: 24px;
+}
+
+.sci-fi-modal .ant-modal-footer {
+  border-top: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* 表单样式 */
+.sci-fi-modal .ant-form-item-label > label {
+  color: #9ca3af;
+}
+
+.sci-fi-modal .ant-input,
+.sci-fi-modal .ant-input-affix-wrapper,
+.sci-fi-modal .ant-select-selector,
+.sci-fi-modal .ant-input-number {
+  background: rgba(17, 24, 39, 0.8) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+  color: #e0e6ed !important;
+}
+
+.sci-fi-modal .ant-input:focus,
+.sci-fi-modal .ant-input-affix-wrapper:focus,
+.sci-fi-modal .ant-select-focused .ant-select-selector,
+.sci-fi-modal .ant-input-number:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* 提示框 */
+.generation-tip,
+.publish-tip {
+  margin: 16px 0;
+  background: rgba(99, 102, 241, 0.1) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Ant Design 组件覆盖 */
+.ant-spin-dot-item {
+  background-color: #6366f1 !important;
+}
+
+.ant-spin-text {
+  color: #e0e6ed !important;
+}
+
+.ant-badge-count {
+  font-family: 'JetBrains Mono', monospace;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.ant-progress-bg {
+  background: linear-gradient(90deg, #6366f1, #06b6d4) !important;
+}
+
+.ant-progress-inner {
+  background: rgba(17, 24, 39, 0.8) !important;
+}
+
+.ant-list-empty-text {
+  color: #6b7280 !important;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .novel-content {
+    padding: 16px;
+  }
+  
+  .project-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .stats-row {
+    margin-bottom: 16px;
+  }
+  
+  .novel-tabs {
+    padding: 16px;
+  }
+}

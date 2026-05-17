@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import CompanionPanel from './components/CompanionPanel';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import './App.css';
+import './styles/novel-theme.css';
 
 const HomeView = lazy(() => import('./views/HomeView'));
 const ChatView = lazy(() => import('./views/ChatView'));
